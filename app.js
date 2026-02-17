@@ -1,9 +1,9 @@
 /**
- * Thought Garden - dev0.1.0.20260217.8
+ * Thought Garden - dev0.1.0.20260217.9
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🌱 Thought Garden Initialized. Version: dev0.1.0.20260217.8');
+    console.log('🌱 Thought Garden Initialized. Version: dev0.1.0.20260217.9');
 
     // UI Elements
     const fabPlant = document.getElementById('fab-plant');
@@ -21,24 +21,38 @@ document.addEventListener('DOMContentLoaded', () => {
     const toastContainer = document.getElementById('toast-container');
     const appBody = document.getElementById('app-body');
     const timerSection = document.querySelector('.timer-display');
+    const settingsView = document.getElementById('settings-view');
+    const timerDurationInput = document.getElementById('timer-duration');
+    const btnExport = document.getElementById('btn-export');
+    const btnResetAll = document.getElementById('btn-reset-all');
 
     // Navigation
     const btnGarden = document.getElementById('btn-garden');
     const btnArchives = document.getElementById('btn-archives');
+    const btnSettings = document.getElementById('btn-settings');
     const viewTitle = document.querySelector('.current-view-title');
 
     // State
     let notes = JSON.parse(localStorage.getItem('thought-garden-seeds') || '[]');
+    let settings = JSON.parse(localStorage.getItem('thought-garden-settings') || '{"timerDuration": 25}');
     let searchQuery = '';
-    let currentView = 'garden'; // 'garden' or 'archives'
+    let currentView = 'garden'; // 'garden', 'archives', or 'settings'
 
     // --- Core Logic ---
 
     function saveToStorage() {
         localStorage.setItem('thought-garden-seeds', JSON.stringify(notes));
+        localStorage.setItem('thought-garden-settings', JSON.stringify(settings));
     }
 
     function renderGarden() {
+        // Handle view visibility
+        gardenGrid.style.display = currentView === 'settings' ? 'none' : 'grid';
+        settingsView.style.display = currentView === 'settings' ? 'block' : 'none';
+        fabPlant.style.display = currentView === 'settings' ? 'none' : 'flex';
+
+        if (currentView === 'settings') return;
+
         // Clear except empty state
         const cards = gardenGrid.querySelectorAll('.seed-card');
         cards.forEach(card => card.remove());
@@ -161,6 +175,16 @@ document.addEventListener('DOMContentLoaded', () => {
         viewTitle.textContent = '記録の壺';
         btnArchives.classList.add('active');
         btnGarden.classList.remove('active');
+        btnSettings.classList.remove('active');
+        renderGarden();
+    });
+
+    btnSettings.addEventListener('click', () => {
+        currentView = 'settings';
+        viewTitle.textContent = '設定';
+        btnSettings.classList.add('active');
+        btnGarden.classList.remove('active');
+        btnArchives.classList.remove('active');
         renderGarden();
     });
 
@@ -172,16 +196,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Timer Logic ---
     let timerInterval;
-    let timeLeft = 25 * 60;
+    let timeLeft = settings.timerDuration * 60;
     const circleRadius = 45;
     const circumference = 2 * Math.PI * circleRadius;
     progressRing.style.strokeDasharray = `${circumference} ${circumference}`;
 
     function updateTimerDisplay() {
+        const totalSeconds = settings.timerDuration * 60;
         const mins = Math.floor(timeLeft / 60);
         const secs = timeLeft % 60;
         timerText.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        const offset = circumference - (timeLeft / (25 * 60)) * circumference;
+        const offset = circumference - (timeLeft / totalSeconds) * circumference;
         progressRing.style.strokeDashoffset = offset;
     }
 
@@ -255,6 +280,42 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast(currentEditingId ? '種を更新しました' : '新しい種を庭に植えました');
         } else {
             showToast('何かを書いてから植えましょう');
+        }
+    });
+
+    // --- Settings Events ---
+    timerDurationInput.value = settings.timerDuration;
+    timerDurationInput.addEventListener('change', (e) => {
+        const val = parseInt(e.target.value);
+        if (val > 0 && val <= 120) {
+            settings.timerDuration = val;
+            saveToStorage();
+            if (!timerInterval) {
+                timeLeft = val * 60;
+                updateTimerDisplay();
+            }
+            showToast('タイマー設定を更新しました');
+        }
+    });
+
+    btnExport.addEventListener('click', () => {
+        const dataStr = JSON.stringify({ notes, settings }, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `thought-garden-seeds-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('データを書き出しました');
+    });
+
+    btnResetAll.addEventListener('click', () => {
+        if (confirm('本当に庭を更地に戻しますか？すべての「思考の種」が失われます。')) {
+            notes = [];
+            settings = { timerDuration: 25 };
+            saveToStorage();
+            location.reload();
         }
     });
 
