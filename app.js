@@ -1,9 +1,9 @@
 /**
- * Thought Garden - dev0.1.0.20260217.7
+ * Thought Garden - dev0.1.0.20260217.8
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🌱 Thought Garden Initialized. Version: dev0.1.0.20260217.7');
+    console.log('🌱 Thought Garden Initialized. Version: dev0.1.0.20260217.8');
 
     // UI Elements
     const fabPlant = document.getElementById('fab-plant');
