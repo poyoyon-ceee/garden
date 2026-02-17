@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thought Garden dev0.1.0.20260217.4</title>
+    <meta name="description" content="メモを種として育て、思考を深めるミニマルなライティング・スペース">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Noto+Serif+JP:wght@400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=dev0.1.0.20260217.4">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="brand">
+                <h1 class="brand-title">Thought<br>Garden</h1>
+                <span class="version-tag">dev0.1.0.20260217.4</span>
+            </div>
+
+            <nav class="nav-menu">
+                <button class="nav-item active" id="btn-garden">🌱 わたしの庭</button>
+                <button class="nav-item" id="btn-archives">🏺 記録の壺</button>
+                <button class="nav-item" id="btn-settings">⚙️ 設定</button>
+            </nav>
+
+            <div class="timer-section">
+                <div class="timer-display">
+                    <svg class="progress-ring" width="100" height="100">
+                        <circle class="progress-ring__circle-bg" stroke="#E0E7E2" stroke-width="4" fill="transparent"
+                            r="45" cx="50" cy="50" />
+                        <circle class="progress-ring__circle" stroke="#8DA399" stroke-width="4" fill="transparent"
+                            r="45" cx="50" cy="50" />
+                    </svg>
+                    <span class="timer-text" id="timer-text">25:00</span>
+                </div>
+                <button class="btn-timer" id="btn-timer-start">集中を始める</button>
+                <p class="timer-label">静寂の時間</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <h2 class="current-view-title">わたしの庭</h2>
+                <div class="user-actions">
+                    <input type="text" placeholder="種を探す..." class="search-input" id="search-input">
+                </div>
+            </header>
+
+            <div class="garden-grid" id="garden-grid">
+                <!-- Seed Cards will be injected by JavaScript -->
+                <div class="empty-state" id="empty-state">
+                    <p>庭はまだ静かです。右下のボタンから最初の「種」を植えましょう。</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Floating Action Button -->
+        <button class="fab" id="fab-plant" title="新しい種を植える">
+            <span class="fab-icon">+</span>
+        </button>
+
+        <!-- Editor Modal (Hidden by default) -->
+        <div class="editor-overlay" id="editor-overlay">
+            <div class="editor-container">
+                <header class="editor-header">
+                    <button class="btn-close" id="btn-close-editor">✕ 閉じる</button>
+                    <button class="btn-save" id="btn-save">庭に植える</button>
+                </header>
+                <input type="text" class="editor-title" placeholder="種のタイトル...">
+                <textarea class="editor-body" placeholder="ここから思考を書き始めましょう..."></textarea>
+            </div>
+        </div>
+    </div>
+    <script src="app.js?v=dev0.1.0.20260217.3"></script>
+</body>
+
+</html>
