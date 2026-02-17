@@ -1,9 +1,9 @@
 /**
- * Thought Garden - dev0.1.0.20260217.5
+ * Thought Garden - dev0.1.0.20260217.7
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🌱 Thought Garden Initialized. Version: dev0.1.0.20260217.5');
+    console.log('🌱 Thought Garden Initialized. Version: dev0.1.0.20260217.7');
 
     // UI Elements
     const fabPlant = document.getElementById('fab-plant');
@@ -18,10 +18,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const editorTitle = document.querySelector('.editor-title');
     const editorBody = document.querySelector('.editor-body');
     const searchInput = document.getElementById('search-input');
+    const toastContainer = document.getElementById('toast-container');
+    const appBody = document.getElementById('app-body');
+    const timerSection = document.querySelector('.timer-display');
+
+    // Navigation
+    const btnGarden = document.getElementById('btn-garden');
+    const btnArchives = document.getElementById('btn-archives');
+    const viewTitle = document.querySelector('.current-view-title');
 
     // State
     let notes = JSON.parse(localStorage.getItem('thought-garden-seeds') || '[]');
     let searchQuery = '';
+    let currentView = 'garden'; // 'garden' or 'archives'
 
     // --- Core Logic ---
 
@@ -35,6 +44,13 @@ document.addEventListener('DOMContentLoaded', () => {
         cards.forEach(card => card.remove());
 
         const filteredNotes = notes.filter(note => {
+            // Filter by view
+            const isArchived = note.archived || false;
+            if (currentView === 'garden' && isArchived) return false;
+            if (currentView === 'archives' && !isArchived) return false;
+
+            // Filter by search
+            if (!searchQuery) return true;
             const query = searchQuery.toLowerCase();
             return (note.title || '').toLowerCase().includes(query) ||
                 (note.body || '').toLowerCase().includes(query);
@@ -42,9 +58,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (filteredNotes.length === 0) {
             emptyState.style.display = 'block';
-            emptyState.querySelector('p').textContent = searchQuery
-                ? `「${searchQuery}」に一致する種は見つかりませんでした。`
-                : '庭はまだ静かです。右下のボタンから最初の「種」を植えましょう。';
+            let message = '';
+            if (searchQuery) {
+                message = `「${searchQuery}」に一致する種は見つかりませんでした。`;
+            } else {
+                message = currentView === 'garden'
+                    ? '庭はまだ静かです。右下のボタンから最初の「種」を植えましょう。'
+                    : '記録の壺はまだ空っぽです。';
+            }
+            emptyState.querySelector('p').textContent = message;
             return;
         }
 
@@ -58,12 +80,6 @@ document.addEventListener('DOMContentLoaded', () => {
             gardenGrid.appendChild(card);
         });
     }
-
-    // --- Search Event ---
-    searchInput.addEventListener('input', (e) => {
-        searchQuery = e.target.value;
-        renderGarden();
-    });
 
     function createCardElement(note, index) {
         const div = document.createElement('div');
@@ -81,29 +97,78 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="seed-tags">
                 ${(note.tags || []).map(tag => `<span class="tag">#${tag}</span>`).join('')}
             </div>
-            <button class="btn-delete" data-id="${note.id}" title="種を取り除く">✕</button>
+            <button class="btn-archive" title="${note.archived ? '庭に戻す' : '記録の壺へ'}">${note.archived ? '🌱' : '🏺'}</button>
+            <button class="btn-delete" title="完全に取り除く">✕</button>
         `;
+
+        // Archive functionality
+        div.querySelector('.btn-archive').addEventListener('click', (e) => {
+            e.stopPropagation();
+            note.archived = !note.archived;
+            saveToStorage();
+            renderGarden();
+            showToast(note.archived ? '種を記録の壺へ移しました' : '種を元の庭へ戻しました');
+        });
 
         // Delete functionality
         div.querySelector('.btn-delete').addEventListener('click', (e) => {
             e.stopPropagation();
-            if (confirm('この種を庭から取り除きますか？')) {
+            if (confirm('この種を完全に取り除きますか？（元に戻せません）')) {
                 notes = notes.filter(n => n.id !== note.id);
                 saveToStorage();
                 renderGarden();
+                showToast('種を完全に取り除きました');
             }
         });
 
-        // Open for edit (simple alert for now, can be expanded)
+        // Open for edit
         div.addEventListener('click', () => {
             editorTitle.value = note.title;
             editorBody.value = note.body;
             currentEditingId = note.id;
             editorOverlay.classList.add('active');
+            editorTitle.focus();
         });
 
         return div;
     }
+
+    // --- Notifications ---
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = `<span>✨</span><span>${message}</span>`;
+        toastContainer.appendChild(toast);
+
+        // Auto remove
+        setTimeout(() => {
+            toast.classList.add('removing');
+            setTimeout(() => toast.remove(), 400);
+        }, 3000);
+    }
+
+    // --- Navigation Events ---
+    btnGarden.addEventListener('click', () => {
+        currentView = 'garden';
+        viewTitle.textContent = 'わたしの庭';
+        btnGarden.classList.add('active');
+        btnArchives.classList.remove('active');
+        renderGarden();
+    });
+
+    btnArchives.addEventListener('click', () => {
+        currentView = 'archives';
+        viewTitle.textContent = '記録の壺';
+        btnArchives.classList.add('active');
+        btnGarden.classList.remove('active');
+        renderGarden();
+    });
+
+    // --- Search Event ---
+    searchInput.addEventListener('input', (e) => {
+        searchQuery = e.target.value;
+        renderGarden();
+    });
 
     // --- Timer Logic ---
     let timerInterval;
@@ -126,17 +191,22 @@ document.addEventListener('DOMContentLoaded', () => {
             timerInterval = null;
             btnTimerStart.textContent = '集中を再開';
             btnTimerStart.classList.remove('running');
+            appBody.classList.remove('timer-glow');
+            timerSection.classList.remove('finished');
         } else {
             btnTimerStart.textContent = '中断する';
             btnTimerStart.classList.add('running');
+            appBody.classList.add('timer-glow');
             timerInterval = setInterval(() => {
                 timeLeft--;
                 updateTimerDisplay();
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     timerInterval = null;
-                    btnTimerStart.textContent = '集中を始める';
-                    alert('静寂の時間が終わりました。少し休憩しましょう。');
+                    btnTimerStart.textContent = '集中を終える';
+                    timerSection.classList.add('finished');
+                    showToast('静寂の時間が終わりました');
+                    // Notification sound or visual could go here
                 }
             }, 1000);
         }
@@ -163,19 +233,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (title || body) {
             if (currentEditingId) {
-                // Update existing
                 const note = notes.find(n => n.id === currentEditingId);
                 note.title = title;
                 note.body = body;
                 note.date = new Date().toISOString();
             } else {
-                // Add new
                 const newNote = {
                     id: Date.now().toString(),
                     title: title,
                     body: body,
                     date: new Date().toISOString(),
-                    tags: ['庭の記憶']
+                    tags: ['庭の記憶'],
+                    archived: false
                 };
                 notes.push(newNote);
             }
@@ -183,18 +252,11 @@ document.addEventListener('DOMContentLoaded', () => {
             saveToStorage();
             renderGarden();
             editorOverlay.classList.remove('active');
-
-            // Visual feedback
-            showToast(currentEditingId ? '種を更新しました' : '新しい種を植えました');
+            showToast(currentEditingId ? '種を更新しました' : '新しい種を庭に植えました');
         } else {
             showToast('何かを書いてから植えましょう');
         }
     });
-
-    function showToast(message) {
-        // Simple alert for now, can be a nice div later
-        console.log('Toast:', message);
-    }
 
     // Initialize
     renderGarden();
